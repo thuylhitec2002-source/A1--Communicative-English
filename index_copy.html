@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bài tập Vowel - Private</title>
+    <style>
+        :root { font-size: 16px; }
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1); width: 25rem; text-align: center; }
+        
+        /* Style cho màn hình Login */
+        #login-screen { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        #login-btn { background: #4285F4; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        #login-msg { color: #e53e3e; font-size: 0.9rem; margin-top: 0.5rem; }
+
+        /* Style Game gốc của bạn */
+        #main-content { display: none; } /* Ẩn bài tập khi chưa login */
+        .row { display: grid; gap: 1rem; margin-bottom: 1rem; }
+        .col-2 { grid-template-columns: 1fr 1fr; }
+        .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .btn { padding: 1rem 0.5rem; border: 0.15rem solid #cbd5e0; border-radius: 0.5rem; cursor: pointer; font-size: 1.2rem; background: white; transition: 0.2s; user-select: none; }
+        .selected { border-color: #3182ce !important; background: #ebf8ff !important; }
+        .match-a { border-color: #48bb78 !important; background: #f0fff4 !important; color: #2f855a !important; cursor: default; }
+        .match-b { border-color: #9f7aea !important; background: #faf5ff !important; color: #6b46c1 !important; cursor: default; }
+        .match-c { border-color: #ed8936 !important; background: #fffaf0 !important; color: #c05621 !important; cursor: default; }
+        .nav-container { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 1rem; }
+        .nav-btn { background: #2d3748; color: white; padding: 0.6rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; }
+        .size-btn { padding: 0.4rem 0.8rem; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <div id="login-screen">
+        <h2 style="color: #2d3748;">Xác thực học viên</h2>
+        <p style="color: #718096;">Vui lòng đăng nhập để làm bài tập</p>
+        <button id="login-btn">Đăng nhập với Google</button>
+        <p id="login-msg"></p>
+    </div>
+
+    <div id="main-content">
+        <div style="text-align: right; margin-bottom: 0.5rem;">
+            <button class="size-btn" onclick="changeFontSize(-2)">A-</button>
+            <button class="size-btn" onclick="changeFontSize(2)">A+</button>
+        </div>
+
+        <h3 id="title" style="margin: 0.5rem 0;">Cặp âm 1/9</h3>
+        
+        <div id="game-ui">
+            <div id="audio-row" class="row"></div>
+            <div id="text-row" class="row"></div>
+            <button class="nav-btn" style="width: 100%; margin-bottom: 1rem;" onclick="showAnswer()">Xem đáp án</button>
+        </div>
+
+        <div id="finish-ui" style="display:none; padding: 1rem 0;">
+            <h2 style="color:#2b6cb0;">Chúc mừng!</h2>
+            <p id="result-text" style="color:#4a5568; font-weight: bold;"></p>
+            <p style="color:#4a5568;">Tiếp tục phát huy nha!</p>
+            <img src="https://media2.giphy.com/media/bCcxY1ADkAqfS/giphy.gif" alt="Bạch Tuyết vỗ tay" style="width: 100%; max-width: 250px; border-radius: 15px; margin: 10px 0;">
+            <audio id="win-audio" src="chúc mừng.mp3"></audio>
+        </div>
+        
+        <div class="nav-container">
+            <button class="nav-btn" id="prev" onclick="changePage(-1)"> &larr; Quay lại</button>
+            <button class="nav-btn" id="next" onclick="changePage(1)">Tiếp theo &rarr;</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCdlTVHwiLOGMnrFe12DE1dQSEHZaJ594I",
+        authDomain: "nguyen-am-tieng-anh.firebaseapp.com",
+        projectId: "nguyen-am-tieng-anh",
+        storageBucket: "nguyen-am-tieng-anh.firebasestorage.app",
+        messagingSenderId: "878440633705",
+        appId: "1:878440633705:web:755de6cb273eb139ebd9f8",
+        measurementId: "G-EM8Y1QW6QH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    document.getElementById("login-btn").onclick = async () => {
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const email = result.user.email;
+
+            // Kiểm tra email trong collection Tienganh_so_cap
+            const q = query(collection(db, "Tienganh_so_cap"), where("email", "==", email));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                // Thành công: Ẩn login, hiện bài tập
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("main-content").style.display = "block";
+                init(); // Khởi tạo game
+            } else {
+                document.getElementById("login-msg").innerText = "Email này không được phép làm bài";
+                await signOut(auth);
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById("login-msg").innerText = "Lỗi đăng nhập: " + error.message;
+        }
+    };
+</script>
+
+<script>
+    function changeFontSize(step) {
+        let root = document.documentElement;
+        let currentSize = parseFloat(window.getComputedStyle(root).fontSize);
+        root.style.fontSize = (currentSize + step) + 'px';
+    }
+
+    const data = [
+        { pair: [{id: '1a', t: '/ɪ/'}, {id: '1b', t: '/i:/'}] },
+        { pair: [{id: '2a', t: '/e/'}, {id: '2b', t: '/æ/'}] },
+        { pair: [{id: '3a', t: '/ə/'}, {id: '3b', t: '/ɜ:/'}] },
+        { pair: [{id: '4a', t: '/ʊ/'}, {id: '4b', t: '/u:/'}] },
+        { pair: [{id: '5a', t: '/ɒ/'}, {id: '5b', t: '/ɔ:/'}] },
+        { pair: [{id: '6a', t: '/ʌ/'}, {id: '6b', t: '/ɑ:/'}] },
+        { pair: [{id: '7a', t: '/ɪə/'}, {id: '7b', t: '/eə/'}, {id: '7c', t: '/ʊə/'}] },
+        { pair: [{id: '8a', t: '/aɪ/'}, {id: '8b', t: '/eɪ/'}, {id: '8c', t: '/ɔɪ/'}] },
+        { pair: [{id: '9a', t: '/aʊ/'}, {id: '9b', t: '/oʊ/'}] }
+    ];
+    
+    let cur = 0, sel = null, completed = Array.from({length: data.length}, () => []);
+    let order = Array(data.length).fill(null);
+
+    function init() {
+        // Kiểm tra xem đã login chưa (vì init được gọi từ module script)
+        if(document.getElementById('main-content').style.display === 'none') return;
+
+        const gameUi = document.getElementById('game-ui'), finishUi = document.getElementById('finish-ui');
+        const prevBtn = document.getElementById('prev'), nextBtn = document.getElementById('next');
+        
+        if (cur >= data.length) {
+            gameUi.style.display = 'none'; 
+            finishUi.style.display = 'block';
+            document.getElementById('title').innerText = "Hoàn thành";
+            nextBtn.style.visibility = 'hidden';
+            prevBtn.style.visibility = 'visible';
+            
+            let totalDone = completed.reduce((sum, arr) => sum + arr.length, 0);
+            let totalPairs = data.reduce((sum, d) => sum + d.pair.length, 0);
+            document.getElementById('result-text').innerText = `Bạn đã làm đúng ${totalDone}/${totalPairs} cặp.`;
+            document.getElementById('win-audio').play().catch(()=>{});
+            return;
+        }
+
+        gameUi.style.display = 'block'; finishUi.style.display = 'none';
+        nextBtn.style.visibility = 'visible';
+        prevBtn.style.visibility = 'visible';
+        document.getElementById('title').innerText = "Cặp âm " + (cur + 1) + "/9";
+        prevBtn.disabled = (cur === 0);
+
+        const ar = document.getElementById('audio-row'), tr = document.getElementById('text-row');
+        ar.innerHTML = ''; tr.innerHTML = '';
+        ar.className = tr.className = (data[cur].pair.length === 3) ? 'row col-3' : 'row col-2';
+
+        data[cur].pair.forEach(item => {
+            let s = document.createElement('div');
+            s.className = 'btn' + (completed[cur].includes(item.id) ? ' match-' + item.id.slice(-1) : '');
+            s.innerHTML = '🔊';
+            s.onclick = () => {
+                new Audio(item.id + '.mp3').play().catch(()=>{});
+                if (!completed[cur].includes(item.id)) {
+                    document.querySelectorAll('#audio-row .btn').forEach(b => b.classList.remove('selected'));
+                    s.classList.add('selected'); sel = item.id;
+                }
+            };
+            ar.appendChild(s);
+        });
+
+        if (!order[cur]) order[cur] = [...data[cur].pair].sort(() => Math.random() - 0.5);
+        
+        order[cur].forEach(item => {
+            let t = document.createElement('div');
+            t.className = 'btn' + (completed[cur].includes(item.id) ? ' match-' + item.id.slice(-1) : '');
+            t.innerText = item.t;
+            t.onclick = () => {
+                if (completed[cur].includes(item.id)) return;
+                if (sel === item.id) {
+                    completed[cur].push(item.id);
+                    new Audio('correct.mp3').play().catch(()=>{});
+                    sel = null; init();
+                } else if (sel) { new Audio('wrong.mp3').play().catch(()=>{}); }
+            };
+            tr.appendChild(t);
+        });
+    }
+
+    function showAnswer() { 
+        completed[cur] = data[cur].pair.map(i => i.id); 
+        order[cur] = [...data[cur].pair]; 
+        init(); 
+    }
+    
+    function changePage(step) { cur = Math.max(0, Math.min(data.length, cur + step)); sel = null; init(); }
+</script>
+</body>
+</html>
