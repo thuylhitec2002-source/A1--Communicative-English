@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phụ Âm Master - Final Champion</title>
+    <style>
+        :root {
+            --primary: #00cec9; --secondary: #6c5ce7; --success: #2ecc71;
+            --error: #ff7675; --hint: #fdcb6e; --bg: #f0f3f7; --card-bg: #ffffff;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; min-height: 100vh; align-items: center; margin: 0; }
+        
+        /* LOGIN SCREEN - OVERLAY */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f8f9fa; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+
+        .google-btn {
+            background: white; color: #2d3436; border: 1px solid #dfe6e9;
+            padding: 1rem 2rem; border-radius: 50px; cursor: pointer;
+            display: flex; align-items: center; gap: 12px; font-weight: bold;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); transition: 0.3s;
+        }
+        .google-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
+
+        /* MAIN GAME CARD */
+        .game-card { 
+            display: none; /* Ẩn mặc định, hiện sau khi login */
+            background: var(--card-bg); width: 100%; max-width: 850px; 
+            border-radius: 35px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); 
+            padding: 45px; text-align: center; border: 1px solid rgba(255,255,255,0.3); 
+        }
+        
+        .screen { display: none; flex-direction: column; align-items: center; padding: 25px 0; }
+        .active { display: flex; }
+        
+        .btn-main { padding: 18px 55px; font-size: 1.4rem; background: var(--primary); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 8px 15px rgba(0,206,201,0.3); transition: 0.3s; }
+        .btn-main:hover { transform: translateY(-4px); box-shadow: 0 14px 25px rgba(0,206,201,0.4); }
+
+        .audio-section { margin-bottom: 25px; background: #f8faff; padding: 30px; border-radius: 25px; border: 2px solid #e1f0ff; position: relative; width: 100%; box-sizing: border-box; }
+        .btn-play { width: 95px; height: 95px; border-radius: 50%; background: var(--primary); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,206,201,0.3); transition: 0.2s; }
+        .btn-play svg { fill: white; width: 45px; height: 45px; }
+
+        .btn-hint { 
+            margin: 15px auto 0 auto; padding: 10px 25px; border-radius: 20px; border: 2px solid var(--hint); 
+            background: white; color: #d35400; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(253, 203, 110, 0.5); display: flex; align-items: center; gap: 8px; transition: 0.3s;
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 30px 0; width: 100%; }
+        
+        .ipa-btn { 
+            padding: 18px 0; font-size: 1.8rem; font-weight: bold; border: 2px solid #dfe6e9; border-radius: 15px; 
+            background: white; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 0 #dfe6e9; outline: none;
+        }
+        .ipa-btn:hover { transform: translateY(-7px); box-shadow: 0 13px 0 #dfe6e9; border-color: var(--primary); }
+        .ipa-btn.correct { background: var(--success) !important; color: white; border-color: var(--success); box-shadow: 0 4px 0 #27ae60; transform: none !important; }
+        .ipa-btn.wrong { background: var(--error) !important; color: white; border-color: var(--error); box-shadow: 0 4px 0 #c0392b; animation: shake 0.4s; transform: none !important; }
+        .ipa-btn.highlight { background: var(--hint) !important; color: white; border-color: var(--hint); transform: scale(1.1); box-shadow: 0 0 20px var(--hint); }
+        
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        .progress { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; margin-bottom: 25px; border: 1px solid #ddd; width: 100%; }
+        #bar { height: 100%; background: var(--secondary); width: 0%; transition: 0.4s; }
+        .result-gif { width: 100%; max-width: 320px; border-radius: 20px; margin: 25px 0; border: 5px solid var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h2 style="font-family: sans-serif; margin: 0;">HỆ THỐNG TRỰC TUYẾN</h2>
+    <p style="color: #636e72;">Vui lòng đăng nhập để tiếp tục</p>
+    <button id="login-btn" class="google-btn">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59L2.56 13.22C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path></svg>
+        Tiếp tục với Google
+    </button>
+    <p id="login-msg" style="color: red; font-weight: bold; margin-top: 15px;"></p>
+</div>
+
+<div class="game-card" id="main-game">
+    <div id="start-screen" class="screen active">
+        <h1 style="color: var(--secondary); font-size: 2.5rem;">Phá Mã Phụ Âm 🕵️‍♂️</h1>
+        <p style="color: #636e72; margin: 20px 0; font-size: 1.15rem;">Bản Champion: Chia 3 chặng (8-8-8).<br>Dùng Beep hệ thống cực ổn định & chuẩn xác.</p>
+        <button class="btn-main" onclick="prepareGame()">BẮT ĐẦU</button>
+    </div>
+
+    <div id="round-screen" class="screen">
+        <h2 id="round-title" style="color: var(--success); font-size: 2rem;">Hoàn thành chặng!</h2>
+        <button id="round-btn" class="btn-main">SANG CHẶNG MỚI</button>
+    </div>
+
+    <div id="game-content" style="display: none;">
+        <h2 id="phase-label" style="color: var(--secondary); margin-bottom: 10px;">Chặng 1</h2>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #888; font-size: 1.1rem; width: 100%;">
+            <span>Câu: <span id="step">1</span>/8</span>
+            <span style="color: var(--success)">Đúng: <span id="score">0</span></span>
+        </div>
+        <div class="progress"><div id="bar"></div></div>
+        <div class="audio-section">
+            <button class="btn-play" onclick="playCurrent()"><svg viewBox="0 0 24 24" width="45" height="45" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button>
+            <br>
+            <button class="btn-hint" onclick="showHint()">💡 Gợi Ý</button>
+        </div>
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1 style="color: var(--secondary); font-size: 2.5rem;">CHÚC MỪNG! 🎉</h1>
+        <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWU1OTI3M3ExOWdxNHFuc3NiYWh6NHpxcDJ2MHpncnlvaDNna3liZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l396FvhXOqm20Pogo/giphy.gif" class="result-gif">
+        <h2 id="final-score" style="margin: 20px 0;"></h2>
+        <button class="btn-main" onclick="location.reload()">LÀM LẠI TỪ ĐẦU</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCdlTVHwiLOGMnrFe12DE1dQSEHZaJ594I",
+        authDomain: "nguyen-am-tieng-anh.firebaseapp.com",
+        projectId: "nguyen-am-tieng-anh",
+        storageBucket: "nguyen-am-tieng-anh.firebasestorage.app",
+        messagingSenderId: "878440633705",
+        appId: "1:878440633705:web:755de6cb273eb139ebd9f8",
+        measurementId: "G-EM8Y1QW6QH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // --- LOGIN LOGIC ---
+    document.getElementById("login-btn").onclick = async () => {
+        try {
+            const res = await signInWithPopup(auth, provider);
+            const q = query(collection(db, "Tienganh_so_cap"), where("email", "==", res.user.email));
+            const snap = await getDocs(q);
+
+            if (!snap.empty) {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("main-game").style.display = "block";
+            } else {
+                document.getElementById("login-msg").innerText = "Email không có quyền truy cập!";
+                await signOut(auth);
+            }
+        } catch (e) { 
+            document.getElementById("login-msg").innerText = "Lỗi đăng nhập hoặc bị hủy."; 
+        }
+    };
+
+    // --- GAME LOGIC (Ghép từ bản Champion) ---
+    const audioMap = {
+        'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 'k': 'k', 'g': 'g', 
+        'f': 'f', 'v': 'v', 'θ': 'th1', 'ð': 'th2', 's': 's', 'z': 'z', 
+        'ʃ': 'sh', 'ʒ': 'ge', 'h': 'h', 'm': 'm', 'n': 'n', 'ŋ': 'ng', 
+        'l': 'l', 'r': 'r', 'w': 'w', 'j': 'j', 'tʃ': 'ch', 'dʒ': 'dge'
+    };
+    const consonants = Object.keys(audioMap);
+    let currentRound = 1, curIdx = 0, totalScore = 0;
+    let masterQuestions = [], roundQuestions = [], target = '', canClick = true;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq, type, duration) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    window.prepareGame = function() {
+        masterQuestions = [...consonants].sort(() => Math.random() - 0.5);
+        startRound(1);
+    }
+
+    function startRound(round) {
+        currentRound = round; curIdx = 0;
+        roundQuestions = masterQuestions.slice((round-1)*8, round*8);
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('game-content').style.display = 'block';
+        document.getElementById('phase-label').innerText = `Chặng ${round}`;
+        initGrid(); loadQuestion();
+    }
+
+    function initGrid() {
+        const grid = document.getElementById('grid'); grid.innerHTML = '';
+        consonants.forEach(ipa => {
+            const btn = document.createElement('button');
+            btn.className = 'ipa-btn'; btn.id = 'btn-' + audioMap[ipa];
+            btn.innerText = ipa; btn.onclick = () => check(ipa, btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function loadQuestion() {
+        if (curIdx >= 8) { handleRoundEnd(); return; }
+        target = roundQuestions[curIdx];
+        document.getElementById('step').innerText = curIdx + 1;
+        document.getElementById('bar').style.width = (curIdx / 8 * 100) + '%';
+        document.querySelectorAll('.ipa-btn').forEach(b => { if(!b.classList.contains('correct')) b.className = 'ipa-btn'; });
+        canClick = true;
+        setTimeout(playCurrent, 700);
+    }
+
+    window.playCurrent = function() {
+        const audio = new Audio(audioMap[target] + ".mp3");
+        audio.play().catch(e => {
+            const utter = new SpeechSynthesisUtterance(target);
+            utter.lang = 'en-US'; window.speechSynthesis.speak(utter);
+        });
+    }
+
+    function check(ipa, btn) {
+        if (!canClick) return;
+        if (ipa === target) {
+            canClick = false; totalScore++; 
+            document.getElementById('score').innerText = totalScore;
+            btn.classList.add('correct');
+            beep(880, 'sine', 0.2);
+            setTimeout(() => { curIdx++; loadQuestion(); }, 1200);
+        } else {
+            btn.classList.add('wrong');
+            beep(220, 'square', 0.15);
+            setTimeout(() => btn.classList.remove('wrong'), 500);
+        }
+    }
+
+    function handleRoundEnd() {
+        document.getElementById('game-content').style.display = 'none';
+        if (currentRound < 3) {
+            document.getElementById('round-screen').classList.add('active');
+            const btnNext = document.getElementById('round-btn');
+            btnNext.onclick = () => startRound(currentRound + 1);
+        } else {
+            document.getElementById('result-screen').classList.add('active');
+            document.getElementById('final-score').innerText = `Kết quả: ${totalScore} / 24`;
+            new Audio("chúc mừng.mp3").play().catch(()=>{});
+        }
+    }
+
+    window.showHint = function() {
+        const correctBtn = document.getElementById('btn-' + audioMap[target]);
+        correctBtn.classList.add('highlight');
+        setTimeout(() => correctBtn.classList.remove('highlight'), 1300);
+    }
+</script>
+</body>
+</html>

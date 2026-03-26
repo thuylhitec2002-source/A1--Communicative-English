@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phụ Âm Master - Final Champion</title>
+    <style>
+        :root {
+            --primary: #00cec9; --secondary: #6c5ce7; --success: #2ecc71;
+            --error: #ff7675; --hint: #fdcb6e; --bg: #f0f3f7; --card-bg: #ffffff;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        
+        .game-card { background: var(--card-bg); width: 100%; max-width: 850px; border-radius: 35px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); padding: 45px; text-align: center; border: 1px solid rgba(255,255,255,0.3); position: relative; overflow: hidden; }
+
+        /* --- LOGIN OVERLAY STYLES --- */
+        #login-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; transition: 0.5s ease;
+        }
+        .login-box { width: 320px; padding: 20px; border-radius: 20px; background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--secondary); }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        .input-group input:focus { border-color: var(--primary); }
+        
+        /* --- GAME SCREENS --- */
+        .screen { display: none; flex-direction: column; align-items: center; padding: 25px 0; }
+        .active { display: flex; }
+        
+        .btn-main { padding: 18px 55px; font-size: 1.4rem; background: var(--primary); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 8px 15px rgba(0,206,201,0.3); transition: 0.3s; width: 100%; }
+        .btn-main:hover { transform: translateY(-4px); box-shadow: 0 14px 25px rgba(0,206,201,0.4); }
+
+        .audio-section { margin-bottom: 25px; background: #f8faff; padding: 30px; border-radius: 25px; border: 2px solid #e1f0ff; position: relative; width: 100%; box-sizing: border-box; }
+        .btn-play { width: 95px; height: 95px; border-radius: 50%; background: var(--primary); border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,206,201,0.3); transition: 0.2s; }
+        .btn-play:hover { transform: scale(1.05); }
+        .btn-play svg { fill: white; width: 45px; height: 45px; }
+
+        .btn-hint { 
+            margin: 15px auto 0 auto; padding: 10px 25px; border-radius: 20px; border: 2px solid var(--hint); 
+            background: white; color: #d35400; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(253, 203, 110, 0.5); display: flex; align-items: center; gap: 8px; transition: 0.3s;
+        }
+        .btn-hint:hover { background: var(--hint); color: white; }
+
+        .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 30px 0; width: 100%; }
+        
+        /* Hiệu ứng nhô cao 7px khi Hover */
+        .ipa-btn { 
+            padding: 18px 0; font-size: 1.8rem; font-weight: bold; border: 2px solid #dfe6e9; border-radius: 15px; 
+            background: white; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 6px 0 #dfe6e9; outline: none;
+        }
+        .ipa-btn:hover { transform: translateY(-7px); box-shadow: 0 13px 0 #dfe6e9; border-color: var(--primary); }
+        .ipa-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #dfe6e9; }
+
+        .ipa-btn.correct { background: var(--success) !important; color: white; border-color: var(--success); box-shadow: 0 4px 0 #27ae60; transform: none !important; }
+        .ipa-btn.wrong { background: var(--error) !important; color: white; border-color: var(--error); box-shadow: 0 4px 0 #c0392b; animation: shake 0.4s; transform: none !important; }
+        .ipa-btn.highlight { background: var(--hint) !important; color: white; border-color: var(--hint); transform: scale(1.1); box-shadow: 0 0 20px var(--hint); }
+        
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        .progress { height: 12px; background: #eee; border-radius: 6px; overflow: hidden; margin-bottom: 25px; border: 1px solid #ddd; width: 100%; }
+        #bar { height: 100%; background: var(--secondary); width: 0%; transition: 0.4s; }
+        .result-gif { width: 100%; max-width: 320px; border-radius: 20px; margin: 25px 0; border: 5px solid var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color: var(--secondary);">ĐĂNG NHẬP</h2>
+            <div class="input-group">
+                <label>Tên người dùng</label>
+                <input type="text" id="username" placeholder="Nhập tên của bạn...">
+            </div>
+            <div class="input-group" style="margin-bottom: 25px;">
+                <label>Mã truy cập</label>
+                <input type="password" id="access-code" placeholder="Nhập mã...">
+            </div>
+            <button class="btn-main" onclick="handleLogin()">VÀO HỌC NGAY</button>
+            <p id="login-msg" style="color: var(--error); margin-top: 15px; font-size: 0.9rem; display: none;">Sai mã rồi bạn ơi! Thử lại nhé.</p>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen active">
+        <h1 style="color: var(--secondary); font-size: 2.5rem;">Phá Mã Phụ Âm 🕵️‍♂️</h1>
+        <p style="color: #636e72; margin: 20px 0; font-size: 1.15rem;">Chào <span id="user-display" style="font-weight: bold; color: var(--primary);">bạn</span>! Bản Champion chia 3 chặng.<br>Dùng Beep hệ thống cực ổn định.</p>
+        <button class="btn-main" style="width: auto;" onclick="prepareGame()">BẮT ĐẦU</button>
+    </div>
+
+    <div id="round-screen" class="screen">
+        <h2 id="round-title" style="color: var(--success); font-size: 2rem;">Hoàn thành chặng!</h2>
+        <p style="margin: 20px 0; color: #636e72; font-size: 1.15rem;">Bạn đang làm rất tốt. Sẵn sàng cho chặng tiếp theo?</p>
+        <button id="round-btn" class="btn-main" style="width: auto;">SANG CHẶNG MỚI</button>
+    </div>
+
+    <div id="game-content" style="display: none;">
+        <h2 id="phase-label" style="color: var(--secondary); margin-bottom: 10px;">Chặng 1</h2>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #888; font-size: 1.1rem; width: 100%;">
+            <span>Câu: <span id="step">1</span>/8</span>
+            <span style="color: var(--success)">Đúng: <span id="score">0</span></span>
+        </div>
+        <div class="progress"><div id="bar"></div></div>
+        <div class="audio-section">
+            <button class="btn-play" onclick="playCurrent()"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button>
+            <br>
+            <button class="btn-hint" onclick="showHint()">💡 Gợi Ý</button>
+        </div>
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1 style="color: var(--secondary); font-size: 2.5rem;">CHÚC MỪNG! 🎉</h1>
+        <p id="congrats-text" style="font-size: 1.2rem; color: #555;"></p>
+        <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWU1OTI3M3ExOWdxNHFuc3NiYWh6NHpxcDJ2MHpncnlvaDNna3liZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l396FvhXOqm20Pogo/giphy.gif" class="result-gif">
+        <h2 id="final-score" style="margin: 20px 0;"></h2>
+        <button class="btn-main" style="width: auto;" onclick="location.reload()">LÀM LẠI TỪ ĐẦU</button>
+    </div>
+</div>
+
+<script>
+    // --- CẤU HÌNH ĐĂNG NHẬP ---
+    const VALID_CODE = "1234"; // Bạn có thể đổi mã này
+
+    function handleLogin() {
+        const user = document.getElementById('username').value;
+        const code = document.getElementById('access-code').value;
+        const msg = document.getElementById('login-msg');
+
+        if (user.trim() !== "" && code === VALID_CODE) {
+            document.getElementById('login-overlay').style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById('login-overlay').style.display = "none";
+                document.getElementById('user-display').innerText = user;
+            }, 500);
+        } else {
+            msg.style.display = "block";
+            msg.innerText = user.trim() === "" ? "Vui lòng nhập tên!" : "Mã truy cập không đúng!";
+        }
+    }
+
+    // --- LOGIC GAME GỐC ---
+    const audioMap = {
+        'p': 'p', 'b': 'b', 't': 't', 'd': 'd', 'k': 'k', 'g': 'g', 
+        'f': 'f', 'v': 'v', 'θ': 'th1', 'ð': 'th2', 's': 's', 'z': 'z', 
+        'ʃ': 'sh', 'ʒ': 'ge', 'h': 'h', 'm': 'm', 'n': 'n', 'ŋ': 'ng', 
+        'l': 'l', 'r': 'r', 'w': 'w', 'j': 'j', 'tʃ': 'ch', 'dʒ': 'dge'
+    };
+    const consonants = Object.keys(audioMap);
+    let currentRound = 1, curIdx = 0, totalScore = 0;
+    let masterQuestions = [], roundQuestions = [], target = '', canClick = true;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq, type, duration) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function prepareGame() {
+        masterQuestions = [...consonants].sort(() => Math.random() - 0.5);
+        startRound(1);
+    }
+
+    function startRound(round) {
+        currentRound = round; curIdx = 0;
+        roundQuestions = masterQuestions.slice((round-1)*8, round*8);
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('game-content').style.display = 'block';
+        document.getElementById('phase-label').innerText = `Chặng ${round}`;
+        initGrid(); loadQuestion();
+    }
+
+    function initGrid() {
+        const grid = document.getElementById('grid'); grid.innerHTML = '';
+        consonants.forEach(ipa => {
+            const btn = document.createElement('button');
+            btn.className = 'ipa-btn'; btn.id = 'btn-' + audioMap[ipa];
+            btn.innerText = ipa; btn.onclick = () => check(ipa, btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function loadQuestion() {
+        if (curIdx >= 8) { handleRoundEnd(); return; }
+        target = roundQuestions[curIdx];
+        document.getElementById('step').innerText = curIdx + 1;
+        document.getElementById('bar').style.width = (curIdx / 8 * 100) + '%';
+        document.querySelectorAll('.ipa-btn').forEach(b => { if(!b.classList.contains('correct')) b.className = 'ipa-btn'; });
+        canClick = true;
+        setTimeout(playCurrent, 700);
+    }
+
+    function playCurrent() {
+        const audio = new Audio(audioMap[target] + ".mp3");
+        audio.play().catch(e => {
+            const utter = new SpeechSynthesisUtterance(target);
+            utter.lang = 'en-US'; window.speechSynthesis.speak(utter);
+        });
+    }
+
+    function check(ipa, btn) {
+        if (!canClick) return;
+        if (ipa === target) {
+            canClick = false; totalScore++; 
+            document.getElementById('score').innerText = totalScore;
+            btn.classList.add('correct');
+            beep(880, 'sine', 0.2);
+            setTimeout(() => { curIdx++; loadQuestion(); }, 1200);
+        } else {
+            btn.classList.add('wrong');
+            beep(220, 'square', 0.15);
+            setTimeout(() => btn.classList.remove('wrong'), 500);
+        }
+    }
+
+    function handleRoundEnd() {
+        document.getElementById('game-content').style.display = 'none';
+        if (currentRound < 3) {
+            document.getElementById('round-screen').classList.add('active');
+            const btnNext = document.getElementById('round-btn');
+            btnNext.onclick = () => startRound(currentRound + 1);
+        } else {
+            document.getElementById('result-screen').classList.add('active');
+            const user = document.getElementById('username').value;
+            document.getElementById('congrats-text').innerText = `Siêu quá ${user} ơi! Bạn đã chinh phục toàn bộ phụ âm.`;
+            document.getElementById('final-score').innerText = `Kết quả của bạn: ${totalScore} / 24`;
+        }
+    }
+
+    function showHint() {
+        const correctBtn = document.getElementById('btn-' + audioMap[target]);
+        correctBtn.classList.add('highlight');
+        setTimeout(() => correctBtn.classList.remove('highlight'), 1300);
+    }
+</script>
+</body>
+</html>
