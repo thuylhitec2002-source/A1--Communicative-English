@@ -23,11 +23,12 @@
         #login-screen { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
         
         .google-btn {
-            background: white; color: #2d3436; border: 1px solid #dfe6e9; padding: 1rem 2rem; border-radius: 50px; 
+            background: white; color: #2d3436; border: 1px solid #dfe6e9; padding: 0.8rem 1.8rem; border-radius: 50px; 
             cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: bold;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.05); transition: 0.3s;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); transition: 0.3s; font-size: 1rem;
         }
         .google-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); border-color: var(--primary); }
+        .google-icon { width: 20px; height: 20px; }
 
         #main-content { display: none; }
         .progress-container { width: 100%; height: 10px; background: #eee; border-radius: 5px; margin: 1.5rem 0; overflow: hidden; }
@@ -79,7 +80,15 @@
 <div class="box">
     <div id="login-screen">
         <h2 class="main-title">THỬ THÁCH TỪ VỰNG<br>CẶP PHỤ ÂM</h2>
-        <button id="login-btn" class="google-btn">Tiếp tục với Google</button>
+        <button id="login-btn" class="google-btn">
+            <svg class="google-icon" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+            </svg>
+            Tiếp tục với Google
+        </button>
         <p id="login-msg" style="color: var(--error); font-weight: bold;"></p>
     </div>
 
@@ -156,8 +165,8 @@
     ];
 
     let cur = 0, sel = null, completed = [], showingAns = false, cachedOrder = { audio: [], text: [] };
-    let firstTryCount = 0; // Đếm số câu đúng lần đầu
-    let currentErrors = []; // Theo dõi các ID đã bị chọn sai trong trang hiện tại
+    let firstTryCount = 0; 
+    let currentErrors = []; 
 
     window.init = function() {
         const gameUi = document.getElementById('game-ui'), finishUi = document.getElementById('finish-ui'),
@@ -210,11 +219,10 @@
             btn.onclick = () => {
                 if (isMatched) return;
                 if (sel === item.id) { 
-                    // Kiểm tra xem ID này có bị sai trước đó không
                     if (!currentErrors.includes(item.id)) firstTryCount++;
                     completed.push(item.id); playBeep('correct'); sel = null; window.init(); 
                 } else if (sel) { 
-                    if (!currentErrors.includes(sel)) currentErrors.push(sel); // Đánh dấu là đã chọn sai
+                    if (!currentErrors.includes(sel)) currentErrors.push(sel);
                     btn.classList.add('shake'); setTimeout(()=>btn.classList.remove('shake'), 400); playBeep('wrong'); 
                 }
             };
@@ -226,12 +234,23 @@
     window.changePage = (s) => { 
         cur = Math.max(0, Math.min(window.data.length, cur + s)); 
         completed = []; sel = null; showingAns = false; cachedOrder = { audio: [], text: [] }; 
-        currentErrors = []; // Reset lỗi khi sang trang mới
+        currentErrors = []; 
         window.init(); 
     };
+    
+    // Đã sửa để không yêu cầu đăng nhập lại
     window.restartGame = () => { 
-        cur = 0; completed = []; sel = null; showingAns = false; firstTryCount = 0; currentErrors = []; 
-        cachedOrder = { audio: [], text: [] }; window.init(); 
+        cur = 0; 
+        completed = []; 
+        sel = null; 
+        showingAns = false; 
+        firstTryCount = 0; 
+        currentErrors = []; 
+        cachedOrder = { audio: [], text: [] }; 
+        // Ẩn màn hình kết thúc, hiện lại phần game chính
+        document.getElementById("main-content").style.display = "block";
+        document.getElementById("finish-ui").style.display = "none";
+        window.init(); 
     };
 
     document.getElementById("login-btn").onclick = async () => {
